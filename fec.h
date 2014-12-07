@@ -264,7 +264,7 @@ void find_cpu_mode(void); /* Call this once at startup to set Cpu_mode */
 /* Determine parity of argument: 1 = odd, 0 = even */
 #ifdef __i386__
 static inline int parityb(unsigned char x){
-  __asm__ __volatile__ ("test %1,%1;setpo %0" : "=g"(x) : "r" (x));
+  __asm__ __volatile__ ("test %1,%1;setpo %0" : "=q"(x) : "q" (x));
   return x;
 }
 #else
