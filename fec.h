@@ -258,7 +258,7 @@ extern unsigned char Taltab[],Tal1tab[];
 
 
 /* CPU SIMD instruction set available */
-extern enum cpu_mode {UNKNOWN=0,PORT,MMX,SSE,SSE2,ALTIVEC} Cpu_mode;
+extern enum cpu_mode {UNKNOWN=0,PORT,MMX,SSE,SSE2,ALTIVEC,SSE3,SSSE3,SSE4_1,SSE4_2,AVX,AVX2,AVX_512F} Cpu_mode;
 void find_cpu_mode(void); /* Call this once at startup to set Cpu_mode */
 
 /* Determine parity of argument: 1 = odd, 0 = even */
@@ -340,7 +340,8 @@ unsigned long long sumsq_av(signed short *in,int cnt);
 /* Low-level data structures and routines */
 
 int cpu_features(void);
-
+void cpu_features_64(int*, int*);
+void cpu_features_64_extended(int*, int*);
 #endif /* _FEC_H_ */
 
 

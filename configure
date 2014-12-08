@@ -3099,6 +3099,10 @@ i386|i486|i586|i686)
 	sumsq_mmx.o sumsq_mmx_assist.o \
 	cpu_features.o cpu_mode_x86.o"
 	;;
+x86_64)
+	ARCH_OPTION="-march=x86-64"
+	MLIBS="cpu_features_64.o cpu_features_64_extended.o cpu_mode_x86_64.o"
+	;;
 powerpc*)
 	ARCH_OPTION="-fno-common -faltivec"
 	MLIBS="viterbi27_av.o viterbi29_av.o viterbi39_av.o viterbi615_av.o \
