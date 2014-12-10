@@ -3101,7 +3101,9 @@ i386|i486|i586|i686)
 	;;
 x86_64)
 	ARCH_OPTION="-march=x86-64"
-	MLIBS="cpu_features_64.o cpu_features_64_extended.o cpu_mode_x86_64.o"
+	MLIBS="dotprod_mmx.o dotprod_mmx_assist_64.o \
+	dotprod_sse2.o dotprod_sse2_assist_64.o \
+	cpu_features_64.o cpu_mode_x86_64.o"
 	;;
 powerpc*)
 	ARCH_OPTION="-fno-common -faltivec"

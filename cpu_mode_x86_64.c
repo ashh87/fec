@@ -23,34 +23,47 @@ enum cpu_mode Cpu_mode;
 
 void find_cpu_mode(void){
 
-  int f, g, h, i;
+  int eax, ebx, ecx, edx, dummy, ebx_extended = 0, ecx_extended = 0;
+  int max_leaf;
   if(Cpu_mode != UNKNOWN)
     return;
 
   /* NB: I think all x64 should have a minimum of SSE2 */
 
   /* Figure out what kind of CPU we have */
-  cpu_features_64(&f, &g);
-  cpu_features_64_extended(&h, &i);
-  if(h & (1<<16)) { /* AVX-512F is present */
+  /* eax = cpu_features_64(1, &ebx, &ecx, &edx); */
+
+  /* highest cpuid leaf from eax */
+  max_leaf = cpu_features_64(0, &dummy, &dummy, &dummy);
+
+  eax = cpu_features_64(1, &ebx, &ecx, &edx);
+
+  /* details about AVX2 and above are in leaf 7, subleaf 0,
+   * which is only readable if IA32_MISC_ENABLES.BOOT_NT4 ==0
+   * which we will assume on Linux
+   */
+  if (max_leaf >= 7)
+    eax = cpu_features_extended_64(7, &ebx_extended, &ecx_extended, &dummy);
+
+  if(ebx_extended & (1<<16)) { /* AVX-512F is present */
 	Cpu_mode = AVX_512F;
-  }else if(h & (1<<5)) { /* AVX2 is present */
+  }else if(ebx_extended & (1<<5)) { /* AVX2 is present */
 	Cpu_mode = AVX2;
-  } else if(g & (1<<28)) { /* AVX is present */
+  } else if(ecx & (1<<28)) { /* AVX is present */
 	Cpu_mode = AVX;
-  } else if(g & (1<<20)) { /* SSE4_2 is present */
+  } else if(ecx & (1<<20)) { /* SSE4_2 is present */
 	Cpu_mode = SSE4_2;
-  } else if(g & (1<<19)) { /* SSE4_1 is present */
+  } else if(ecx & (1<<19)) { /* SSE4_1 is present */
 	Cpu_mode = SSE4_1;
-  } else if(g & (1<<9)) { /* SSSE3 is present */
+  } else if(ecx & (1<<9)) { /* SSSE3 is present */
 	Cpu_mode = SSSE3;
-  } else if(g & 1) { /* SSE3 is present */
+  } else if(ecx & 1) { /* SSE3 is present */
 	Cpu_mode = SSE3;
-  } else if(f & (1<<26)){ /* SSE2 is present */
+  } else if(edx & (1<<26)){ /* SSE2 is present */
     Cpu_mode = SSE2;
-  } else if(f & (1<<25)){ /* SSE is present */
+  } else if(edx & (1<<25)){ /* SSE is present */
     Cpu_mode = SSE;
-  } else if(f & (1<<23)){ /* MMX is present */
+  } else if(edx & (1<<23)){ /* MMX is present */
     Cpu_mode = MMX;
   } else { /* No SIMD at all */
     Cpu_mode = PORT;

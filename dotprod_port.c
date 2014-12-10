@@ -16,13 +16,10 @@ struct dotprod {
 void *initdp_port(signed short coeffs[],int len){
   struct dotprod *dp;
   int j;
-
   if(len == 0)
     return NULL;
-
   dp = (struct dotprod *)calloc(1,sizeof(struct dotprod));
   dp->len = len;
-
   /* Just one copy of the coefficients for the C version */
   dp->coeffs = (signed short *)calloc(len,sizeof(signed short));
   for(j=0;j<len;j++)

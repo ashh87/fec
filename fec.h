@@ -340,8 +340,8 @@ unsigned long long sumsq_av(signed short *in,int cnt);
 /* Low-level data structures and routines */
 
 int cpu_features(void);
-void cpu_features_64(int*, int*);
-void cpu_features_64_extended(int*, int*);
+unsigned cpu_features_64(unsigned, unsigned*, unsigned*, unsigned*);
+unsigned cpu_features_extended_64(unsigned, unsigned*, unsigned*, unsigned*);
 #endif /* _FEC_H_ */
 
 

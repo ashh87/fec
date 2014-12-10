@@ -17,8 +17,11 @@ struct dotprod {
    */
   signed short *coeffs[8];
 };
-
+#if defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
+long dotprod_sse2_assist_64(signed short *a,signed short *b,int cnt);
+#else
 long dotprod_sse2_assist(signed short *a,signed short *b,int cnt);
+#endif
 
 /* Create and return a descriptor for use with the dot product function */
 void *initdp_sse2(signed short coeffs[],int len){
@@ -68,5 +71,9 @@ long dotprod_sse2(void *p,signed short a[]){
   al = a - ar;
   
   /* Call assembler routine to do the work, passing number of 8-word blocks */
+  #if defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
+  return dotprod_sse2_assist_64(ar,dp->coeffs[al],(dp->len+al-1)/8+1);
+  #else
   return dotprod_sse2_assist(ar,dp->coeffs[al],(dp->len+al-1)/8+1);
+  #endif
 }
