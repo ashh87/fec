@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <limits.h>
+#include <altivec.h>
 #include "fec.h"
 
 typedef union { unsigned char c[2][16]; vector unsigned char v[2]; } decision_t;
@@ -30,7 +31,7 @@ int init_viterbi39_av(void *p,int starting_state){
   int i;
 
   for(i=0;i<32;i++)
-    vp->metrics1.v[i] = (vector unsigned short)(1000);
+    vp->metrics1.v[i] = (vector unsigned short){1000};
 
   vp->old_metrics = &vp->metrics1;
   vp->new_metrics = &vp->metrics2;
@@ -111,7 +112,7 @@ int update_viterbi39_blk_av(void *p,unsigned char *syms,int nbits){
   struct v39 *vp = p;
   decision_t *d = (decision_t *)vp->dp;
   int path_metric = 0;
-  vector unsigned char decisions = (vector unsigned char)(0);
+  vector unsigned char decisions = (vector unsigned char){0};
 
   while(nbits--){
     vector unsigned short symv,sym0v,sym1v,sym2v;
@@ -122,7 +123,7 @@ int update_viterbi39_blk_av(void *p,unsigned char *syms,int nbits){
     /* Splat the 0th symbol across sym0v, the 1st symbol across sym1v, etc */
     s = (vector unsigned char)vec_perm(vec_ld(0,syms),vec_ld(5,syms),vec_lvsl(0,syms));
 
-    symv = (vector unsigned short)vec_mergeh((vector unsigned char)(0),s);    /* Unsigned byte->word unpack */ 
+    symv = (vector unsigned short)vec_mergeh((vector unsigned char){0},s);    /* Unsigned byte->word unpack */
     sym0v = vec_splat(symv,0);
     sym1v = vec_splat(symv,1);
     sym2v = vec_splat(symv,2);
@@ -140,7 +141,7 @@ int update_viterbi39_blk_av(void *p,unsigned char *syms,int nbits){
       m0 = vec_add(vec_xor(Branchtab39[0].v[i],sym0v),vec_xor(Branchtab39[1].v[i],sym1v));
       m1 = vec_xor(Branchtab39[2].v[i],sym2v);
       metric = vec_add(m0,m1);
-      m_metric = vec_sub((vector unsigned short)(765),metric);
+      m_metric = vec_sub((vector unsigned short){765},metric);
     
       /* Add branch metrics to path metrics */
       m0 = vec_adds(vp->old_metrics->v[i],metric);

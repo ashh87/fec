@@ -5,7 +5,16 @@
 #include <string.h>
 #include "fixed.h"
 #ifdef __VEC__
+
+#if HAVE_SYS_SYSCTL_H && HAVE_SYSCTL && defined(CTL_HW) && defined(HW_VECTORUNIT)
 #include <sys/sysctl.h>
+#else
+#include <unistd.h>
+#include <fcntl.h>
+#include <linux/auxvec.h>
+#include <asm/cputable.h>
+#endif
+
 #endif
 
 
@@ -35,6 +44,8 @@ void encode_rs_8(data_t *data, data_t *parity,int pad){
       cpu_mode = PORT;
     }
 #elif __VEC__
+
+#if HAVE_SYS_SYSCTL_H && HAVE_SYSCTL && defined(CTL_HW) && defined(HW_VECTORUNIT)
     /* Ask the OS if we have Altivec support */
     int selectors[2] = { CTL_HW, HW_VECTORUNIT };
     int hasVectorUnit = 0;
@@ -44,6 +55,34 @@ void encode_rs_8(data_t *data, data_t *parity,int pad){
       cpu_mode = ALTIVEC;
     else
       cpu_mode = PORT;
+#else
+    int result = 0;
+    unsigned long buf[64];
+    ssize_t count;
+    int fd, i;
+
+    fd = open("/proc/self/auxv", O_RDONLY);
+    if (fd < 0) {
+	cpu_mode = PORT;
+        return;
+    }
+    // loop on reading
+    do {
+        count = read(fd, buf, sizeof(buf));
+        if (count < 0)
+            break;
+        for (i=0; i < (count / sizeof(unsigned long)); i += 2) {
+            if (buf[i] == AT_HWCAP) {
+                result = !!(buf[i+1] & PPC_FEATURE_HAS_ALTIVEC);
+                goto out_close;
+            } else if (buf[i] == AT_NULL)
+                goto out_close;
+        }
+    } while (count == sizeof(buf));
+out_close:
+    close(fd);
+    cpu_mode = result ? ALTIVEC : PORT;
+#endif
 #else
     cpu_mode = PORT;
 #endif

@@ -3,9 +3,16 @@
  */
 #include <stdio.h>
 #include "fec.h"
-#ifdef __VEC__
+
+#if HAVE_SYS_SYSCTL_H && HAVE_SYSCTL && defined(CTL_HW) && defined(HW_VECTORUNIT)
 #include <sys/sysctl.h>
+#else
+#include <unistd.h>
+#include <fcntl.h>
+#include <linux/auxvec.h>
+#include <asm/cputable.h>
 #endif
+
 
 /* Various SIMD instruction set names */
 char *Cpu_modes[] = {"Unknown","Portable C","x86 Multi Media Extensions (MMX)",
@@ -20,7 +27,7 @@ void find_cpu_mode(void){
   if(Cpu_mode != UNKNOWN)
     return;
 
-#ifdef __VEC__
+#if HAVE_SYS_SYSCTL_H && HAVE_SYSCTL && defined(CTL_HW) && defined(HW_VECTORUNIT)
   {
   /* Ask the OS if we have Altivec support */
   int selectors[2] = { CTL_HW, HW_VECTORUNIT };
@@ -33,7 +40,32 @@ void find_cpu_mode(void){
     Cpu_mode = PORT;
   }
 #else
-  Cpu_mode = PORT;
+    int result = 0;
+    unsigned long buf[64];
+    ssize_t count;
+    int fd, i;
+
+    fd = open("/proc/self/auxv", O_RDONLY);
+    if (fd < 0) {
+	Cpu_mode = PORT;
+        return;
+    }
+    // loop on reading
+    do {
+        count = read(fd, buf, sizeof(buf));
+        if (count < 0)
+            break;
+        for (i=0; i < (count / sizeof(unsigned long)); i += 2) {
+            if (buf[i] == AT_HWCAP) {
+                result = !!(buf[i+1] & PPC_FEATURE_HAS_ALTIVEC);
+                goto out_close;
+            } else if (buf[i] == AT_NULL)
+                goto out_close;
+        }
+    } while (count == sizeof(buf));
+out_close:
+    close(fd);
+    Cpu_mode = result ? ALTIVEC : PORT;
 #endif
 
   fprintf(stderr,"SIMD CPU detect: %s\n",Cpu_modes[Cpu_mode]);
