@@ -23,7 +23,7 @@ enum cpu_mode Cpu_mode;
 
 void find_cpu_mode(void){
 
-  int eax, ebx, ecx, edx, dummy, ebx_extended = 0, ecx_extended = 0;
+  unsigned int ebx, ecx, edx, dummy, ebx_extended = 0, ecx_extended = 0;
   int max_leaf;
   if(Cpu_mode != UNKNOWN)
     return;
@@ -36,14 +36,14 @@ void find_cpu_mode(void){
   /* highest cpuid leaf from eax */
   max_leaf = cpu_features_64(0, &dummy, &dummy, &dummy);
 
-  eax = cpu_features_64(1, &ebx, &ecx, &edx);
+  cpu_features_64(1, &ebx, &ecx, &edx);
 
   /* details about AVX2 and above are in leaf 7, subleaf 0,
    * which is only readable if IA32_MISC_ENABLES.BOOT_NT4 ==0
    * which we will assume on Linux
    */
   if (max_leaf >= 7)
-    eax = cpu_features_extended_64(7, &ebx_extended, &ecx_extended, &dummy);
+    cpu_features_extended_64(7, &ebx_extended, &ecx_extended, &dummy);
 
   if(ebx_extended & (1<<16)) { /* AVX-512F is present */
 	Cpu_mode = AVX_512F;

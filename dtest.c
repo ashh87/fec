@@ -10,6 +10,8 @@
 #endif
 #include "fec.h"
 
+#include <time.h>
+
 #if HAVE_GETOPT_LONG
 struct option Options[] = {
   {"force-altivec",0,NULL,'a'},
@@ -25,8 +27,11 @@ struct option Options[] = {
 int main(int argc,char *argv[]){
   short coeffs[512];
   short input[2048];
-  int trials=1000,d;
+  int trials=100,d,nt;
   int errors = 0;
+  clock_t start1, start2, end1, end2;
+  double t1, t2;
+  double m1 = 0, m2 = 0;
 
 #if HAVE_GETOPT_LONG
   while((d = getopt_long(argc,argv,"apmstn:",Options,NULL)) != EOF){
@@ -54,7 +59,7 @@ int main(int argc,char *argv[]){
       break;
     }
   }
-
+  nt = trials;
   while(trials--){
     long port_result;
     long simd_result;
@@ -87,13 +92,24 @@ int main(int argc,char *argv[]){
       input[i] = random();
     
     offset = random() & 511;
-
+	start1 = clock();
     simd_result = dotprod(dp_simd,input+offset);
+    end1 = clock();
+	t1 =  ((double)(end1-start1));
+	m1 += t1;
+
+    start2 = clock();
     port_result = dotprod_port(dp_port,input+offset);
+    end2 = clock();
+	t2 =  ((double)(end2-start2));
+	m2 += t2;
+
     if(simd_result != port_result){
       errors++;
     }
   }
-  printf("dtest: %d errors\n",errors);
+  m1 /= nt;
+  m2 /= nt;
+  printf("dtest: %d errors\navg simd: %f, avg port: %f\n",errors, m1, m2);
   exit(0);
 }

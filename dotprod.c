@@ -10,7 +10,7 @@ void *initdp_port(signed short coeffs[],int len);
 long dotprod_port(void *p,signed short *b);
 void freedp_port(void *p);
 
-#ifdef __i386__ || defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
+#if defined(__i386__) || defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
 void *initdp_mmx(signed short coeffs[],int len);
 void *initdp_sse2(signed short coeffs[],int len);
 long dotprod_mmx(void *p,signed short *b);
@@ -32,7 +32,7 @@ void *initdp(signed short coeffs[],int len){
   case PORT:
   default:
     return initdp_port(coeffs,len);
-#ifdef __i386__ || defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
+#if defined(__i386__) || defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
   case MMX:
   case SSE:
     return initdp_mmx(coeffs,len);
@@ -76,7 +76,7 @@ long dotprod(void *p,signed short a[]){
   case PORT:
   default:
     return dotprod_port(p,a);
-#ifdef __i386__ || defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
+#if defined(__i386__) || defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
   case MMX:
   case SSE:
     return dotprod_mmx(p,a);

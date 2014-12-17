@@ -46,9 +46,9 @@ long dotprod_port(void *p,signed short a[]){
   int i;
 
   corr = 0;
-  for(i=0;i<dp->len;i++){
+  for(i=0;i<dp->len;i++)
     corr += (long)a[i] * dp->coeffs[i];
-  }
+
   return corr;
 }
 

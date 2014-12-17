@@ -303,7 +303,7 @@ void *initdp_port(signed short coeffs[],int len);
 void freedp_port(void *dp);
 long dotprod_port(void *dp,signed short a[]);
 
-#ifdef __i386__
+#if defined(__i386__) || defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
 void *initdp_mmx(signed short coeffs[],int len);
 void freedp_mmx(void *dp);
 long dotprod_mmx(void *dp,signed short a[]);
