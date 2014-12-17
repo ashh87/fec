@@ -72,8 +72,11 @@ long dotprod_mmx(void *p,signed short a[]){
    * situation where this could cause a segfault since memory protection
    * in the x86 machines is done on much larger boundaries
    */
+  #if defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
+  ar = (signed short *)((long)a & ~7);
+  #elif
   ar = (signed short *)((int)a & ~7);
-  
+  #endif
   /* Choose one of 4 sets of pre-shifted coefficients. al is both the
    * index into dp->coeffs[] and the number of 0 words padded onto
    * that coefficients array for alignment purposes
