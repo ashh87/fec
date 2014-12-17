@@ -68,6 +68,7 @@ dotprod_sse2_assist_64:
 	psrldq $4,%xmm0
 	movd %xmm0,%ebx
 	add %ebx,%eax
+	cdqe
 
 	pop %rbx
 	retq

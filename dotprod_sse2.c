@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <stdint.h>
 #include "fec.h"
 
 struct dotprod {
@@ -68,7 +67,7 @@ long dotprod_sse2(void *p,signed short a[]){
   struct dotprod *dp = (struct dotprod *)p;
   int al;
   signed short *ar;
-  int32_t res;
+
   #if defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
   ar = (signed short *)((long)a & ~15);
   #else
@@ -77,8 +76,7 @@ long dotprod_sse2(void *p,signed short a[]){
   al = a - ar;
   /* Call assembler routine to do the work, passing number of 8-word blocks */
   #if defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
-  res = (int32_t)dotprod_sse2_assist_64(ar,dp->coeffs[al], (dp->len+al-1)/8+1);
-  return (long)res;
+  return dotprod_sse2_assist_64(ar,dp->coeffs[al], (dp->len+al-1)/8+1);
   #else
   return dotprod_sse2_assist(ar,dp->coeffs[al],(dp->len+al-1)/8+1);
   #endif

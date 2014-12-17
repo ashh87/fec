@@ -74,7 +74,7 @@ long dotprod_mmx(void *p,signed short a[]){
    */
   #if defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
   ar = (signed short *)((long)a & ~7);
-  #elif
+  #else
   ar = (signed short *)((int)a & ~7);
   #endif
   /* Choose one of 4 sets of pre-shifted coefficients. al is both the
