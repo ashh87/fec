@@ -53,6 +53,7 @@ void freedp(void *p){
   switch(Cpu_mode){
   case PORT:
   default:
+    return freedp_port(p);
   break;
 #if defined(__i386__) || defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
   case MMX:
