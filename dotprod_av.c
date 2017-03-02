@@ -5,6 +5,7 @@
  */
 #include <stdlib.h>
 #include <altivec.h>
+#include <memory.h>
 #include "fec.h"
 
 struct dotprod {
@@ -19,7 +20,7 @@ struct dotprod {
 /* Create and return a descriptor for use with the dot product function */
 void *initdp_av(signed short coeffs[],int len){
   struct dotprod *dp;
-  int i,j;
+  int i,j, blksize;
 
   if(len == 0)
     return NULL;
@@ -31,7 +32,9 @@ void *initdp_av(signed short coeffs[],int len){
    * each aligned to 16-byte boundary
    */
   for(i=0;i<8;i++){
-    dp->coeffs[i] = calloc(1+(len+i-1)/8,sizeof(vector signed short));
+    blksize = (1+(len+i-1)/8) * sizeof(vector signed short);
+    posix_memalign((void **)&dp->coeffs[i],16,blksize);
+    memset(dp->coeffs[i],0,blksize);
     for(j=0;j<len;j++)
       dp->coeffs[i][j+i] = coeffs[j];
   }
