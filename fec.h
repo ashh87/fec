@@ -160,10 +160,11 @@ int chainback_viterbi39_port(void *p,unsigned char *data,unsigned int nbits,unsi
 void delete_viterbi39_port(void *p);
 int update_viterbi39_blk_port(void *p,unsigned char *syms,int nbits);
 
-/* r=1/4 k=7 convolutional encoder polynomials */
-#define	V47POLYA	0x1ed
-#define	V47POLYB	0x19b
-#define	V47POLYC	0x127
+/* r=1/4 k=7 DAB convolutional encoder polynomials, reversed */
+#define	V47POLYA	0x6d
+#define	V47POLYB	0x4f
+#define	V47POLYC	0x53
+#define	V47POLYD	0x6d
 
 void *create_viterbi47(int len);
 void set_viterbi47_polynomial(int polys[3]);
