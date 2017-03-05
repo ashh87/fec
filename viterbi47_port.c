@@ -23,16 +23,13 @@
 #define PRECISIONSHIFT 2
 #define RENORMALIZE_THRESHOLD 110
 
+#include "fec.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
 #include <memory.h>
 #include <sys/resource.h>
-#include <pmmintrin.h>
-#include <emmintrin.h>
-#include <xmmintrin.h>
-#include <mmintrin.h>
 
 #define OFFSET (127.5)
 #define CLIP 255
@@ -40,31 +37,6 @@
 
 
 #define GENERICONLY
-
-/* Determine parity of argument: 1 = odd, 0 = even */
-#ifdef __i386__
-static inline int parityb(unsigned char x){
-  __asm__ __volatile__ ("test %1,%1;setpo %0" : "=g"(x) : "r" (x));
-  return x;
-}
-#else
-
-static inline int parityb(unsigned char x){
-  extern unsigned char Partab[256];
-  extern int P_init;
-  if(!P_init){
-    partab_init();
-  }
-  return Partab[x];
-}
-#endif
-
-static inline int parity(int x){
-  /* Fold down to one byte */
-  x ^= (x >> 16);
-  x ^= (x >> 8);
-  return parityb(x);
-}
 
 extern int posix_memalign(void **memptr, size_t alignment, size_t size);
 //decision_t is a BIT vector
