@@ -167,18 +167,27 @@ int update_viterbi39_blk_port(void *p,unsigned char *syms,int nbits);
 #define	V47POLYD	0x6d
 
 void *create_viterbi47(int len);
-void set_viterbi47_polynomial(int polys[3]);
+void set_viterbi47_polynomial(int polys[4]);
 int init_viterbi47(void *vp,int starting_state);
 int update_viterbi47_blk(void *vp,unsigned char syms[],int nbits);
 int chainback_viterbi47(void *vp, unsigned char *data,unsigned int nbits,unsigned int endstate);
 void delete_viterbi47(void *vp);
 
 void *create_viterbi47_port(int len);
-void set_viterbi47_polynomial_port(int polys[3]);
+void set_viterbi47_polynomial_port(int polys[4]);
 int init_viterbi47_port(void *p,int starting_state);
 int chainback_viterbi47_port(void *p,unsigned char *data,unsigned int nbits,unsigned int endstate);
 void delete_viterbi47_port(void *p);
 int update_viterbi47_blk_port(void *p,unsigned char *syms,int nbits);
+
+#ifdef __VEC__
+void *create_viterbi47_av(int len);
+void set_viterbi47_polynomial_av(int polys[4]);
+int init_viterbi47_av(void *p,int starting_state);
+int chainback_viterbi47_av(void *p,unsigned char *data,unsigned int nbits,unsigned int endstate);
+void delete_viterbi47_av(void *p);
+int update_viterbi47_blk_av(void *p,unsigned char *syms,int nbits);
+#endif
 
 /* r=1/6 k=15 Cassini convolutional encoder polynomials without symbol inversion
  * dfree = 56

@@ -14,11 +14,11 @@ void *create_viterbi47(int len){
   case PORT:
   default:
     return create_viterbi47_port(len);
-/*
 #ifdef __VEC__
   case ALTIVEC:
     return create_viterbi47_av(len);
 #endif
+/*
 #ifdef __i386__
   case MMX:
     return create_viterbi47_mmx(len);
@@ -31,18 +31,18 @@ void *create_viterbi47(int len){
   }
 }
 
-void set_viterbi47_polynomial(int polys[3]){
+void set_viterbi47_polynomial(int polys[4]){
   switch(Cpu_mode){
   case PORT:
   default:
     set_viterbi47_polynomial_port(polys);
     break;
-/*
 #ifdef __VEC__
   case ALTIVEC:
     set_viterbi47_polynomial_av(polys);
     break;
 #endif
+/*
 #ifdef __i386__
   case MMX:
     set_viterbi47_polynomial_mmx(polys);
@@ -65,11 +65,11 @@ int init_viterbi47(void *p,int starting_state){
     case PORT:
     default:
       return init_viterbi47_port(p,starting_state);
-/*
 #ifdef __VEC__
     case ALTIVEC:
       return init_viterbi47_av(p,starting_state);
 #endif
+/*
 #ifdef __i386__
     case MMX:
       return init_viterbi47_mmx(p,starting_state);
@@ -93,11 +93,11 @@ int chainback_viterbi47(
     case PORT:
     default:
       return chainback_viterbi47_port(p,data,nbits,endstate);
-/*
 #ifdef __VEC__
     case ALTIVEC:
       return chainback_viterbi47_av(p,data,nbits,endstate);
 #endif
+/*
 #ifdef __i386__
     case MMX:
       return chainback_viterbi47_mmx(p,data,nbits,endstate);
@@ -117,12 +117,12 @@ void delete_viterbi47(void *p){
     default:
       delete_viterbi47_port(p);
       break;
-/*
 #ifdef __VEC__
     case ALTIVEC:
       delete_viterbi47_av(p);
       break;
 #endif
+/*
 #ifdef __i386__
     case MMX:
       delete_viterbi47_mmx(p);
@@ -147,11 +147,11 @@ int update_viterbi47_blk(void *p,unsigned char syms[],int nbits){
     case PORT:
     default:
       return update_viterbi47_blk_port(p,syms,nbits);
-/*
 #ifdef __VEC__
     case ALTIVEC:
       return update_viterbi47_blk_av(p,syms,nbits);
 #endif
+/*
 #ifdef __i386__
     case MMX:
       return update_viterbi47_blk_mmx(p,syms,nbits);

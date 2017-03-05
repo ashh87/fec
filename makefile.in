@@ -130,8 +130,6 @@ viterbi39_sse.o: viterbi39_sse.c fec.h
 
 viterbi39_mmx.o: viterbi39_mmx.c fec.h
 
-viterbi47_port.o: viterbi47_port.c fec.h
-
 encode_rs_char.o: encode_rs_char.c char.h rs-common.h
 
 encode_rs_int.o: encode_rs_int.c int.h rs-common.h
@@ -226,6 +224,8 @@ viterbi39_sse2.o: viterbi39_sse2.c fec.h
 viterbi47.o: viterbi47.c fec.h
 
 viterbi47_port.o: viterbi47_port.c fec.h
+
+viterbi47_av.o: viterbi47_av.c fec.h
 
 viterbi615.o: viterbi615.c fec.h
 
