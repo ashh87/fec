@@ -1,67 +1,149 @@
-/* K=7 r=1/4 Viterbi decoder in portable C
- * Copyright Aug 2006, Phil Karn, KA9Q
+/* Generic Viterbi decoder,
+ * Copyright Phil Karn, KA9Q, 
+ * Code has been slightly modified for use with Spiral (www.spiral.net)
+ * Karn's original code can be found here: http://www.ka9q.net/code/fec/
  * May be used under the terms of the GNU Lesser General Public License (LGPL)
+ * see http://www.gnu.org/copyleft/lgpl.html
  */
+
+#define K 7
+#define RATE 4
+//#define POLYS { 91, 121, 101, 91 }
+#define POLYS { 0x6d, 0x4f, 0x53, 0x6d }
+#define NUMSTATES 64
+#define FRAMEBITS 768
+#define DECISIONTYPE unsigned char
+#define DECISIONTYPE_BITSIZE 8
+#define COMPUTETYPE unsigned char
+#define EBN0 3
+#define TRIALS 10000
+#define __int32 int
+#define FUNC FULL_SPIRAL
+#define METRICSHIFT 2
+#define PRECISIONSHIFT 2
+#define RENORMALIZE_THRESHOLD 110
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <time.h>
 #include <memory.h>
-#include "fec.h"
+#include <sys/resource.h>
+#include <pmmintrin.h>
+#include <emmintrin.h>
+#include <xmmintrin.h>
+#include <mmintrin.h>
 
-typedef union { unsigned int w[256]; } metric_t;
-typedef union { unsigned long w[8];} decision_t;
+#define OFFSET (127.5)
+#define CLIP 255
 
-static union { unsigned char c[128]; } Branchtab47[3];
-static int Init = 0;
 
-/* State info for instance of Viterbi decoder */
-struct v47 {
-  metric_t metrics1; /* path metric buffer 1 */
-  metric_t metrics2; /* path metric buffer 2 */
-  decision_t *dp;          /* Pointer to current decision */
+
+#define GENERICONLY
+
+/* Determine parity of argument: 1 = odd, 0 = even */
+#ifdef __i386__
+static inline int parityb(unsigned char x){
+  __asm__ __volatile__ ("test %1,%1;setpo %0" : "=g"(x) : "r" (x));
+  return x;
+}
+#else
+
+static inline int parityb(unsigned char x){
+  extern unsigned char Partab[256];
+  extern int P_init;
+  if(!P_init){
+    partab_init();
+  }
+  return Partab[x];
+}
+#endif
+
+static inline int parity(int x){
+  /* Fold down to one byte */
+  x ^= (x >> 16);
+  x ^= (x >> 8);
+  return parityb(x);
+}
+
+extern int posix_memalign(void **memptr, size_t alignment, size_t size);
+//decision_t is a BIT vector
+typedef union {
+  DECISIONTYPE t[NUMSTATES/DECISIONTYPE_BITSIZE];
+  unsigned int w[NUMSTATES/32];
+  unsigned short s[NUMSTATES/16];
+  unsigned char c[NUMSTATES/8];
+} decision_t __attribute__ ((aligned (16)));
+
+typedef union {
+  COMPUTETYPE t[NUMSTATES];
+} metric_t __attribute__ ((aligned (16)));
+
+inline void renormalize(COMPUTETYPE* X, COMPUTETYPE threshold){
+      if (X[0]>threshold){
+    COMPUTETYPE min=X[0];
+    for(int i=0;i<NUMSTATES;i++)
+    if (min>X[i])
+      min=X[i];
+    for(int i=0;i<NUMSTATES;i++)
+      X[i]-=min;
+      }
+}
+
+COMPUTETYPE Branchtab[NUMSTATES/2*RATE] __attribute__ ((aligned (16)));
+
+/* State info for instance of Viterbi decoder
+ */
+struct v {
+  __attribute__ ((aligned (16))) metric_t metrics1; /* path metric buffer 1 */
+  __attribute__ ((aligned (16))) metric_t metrics2; /* path metric buffer 2 */
   metric_t *old_metrics,*new_metrics; /* Pointers to path metrics, swapped on every bit */
-  decision_t *decisions;   /* Beginning of decisions for block */
+  decision_t *decisions;   /* decisions */
 };
 
 /* Initialize Viterbi decoder for start of new frame */
 int init_viterbi47_port(void *p,int starting_state){
-  struct v47 *vp = p;
+  struct v *vp = p;
   int i;
 
   if(p == NULL)
     return -1;
-  for(i=0;i<256;i++)
-    vp->metrics1.w[i] = 63;
+  for(i=0;i<NUMSTATES;i++)
+      vp->metrics1.t[i] = 63;
 
   vp->old_metrics = &vp->metrics1;
   vp->new_metrics = &vp->metrics2;
-  vp->dp = vp->decisions;
-  vp->old_metrics->w[starting_state & 255] = 0; /* Bias known start state */
+  vp->old_metrics->t[starting_state & (NUMSTATES-1)] = 0; /* Bias known start state */
   return 0;
 }
 
-void set_viterbi47_polynomial_port(int polys[3]){
-  int state;
-
-  for(state=0;state < 128;state++){
-    Branchtab47[0].c[state] = (polys[0] < 0) ^ parity((2*state) & abs(polys[0])) ? 255 : 0;
-    Branchtab47[1].c[state] = (polys[1] < 0) ^ parity((2*state) & abs(polys[1])) ? 255 : 0;
-    Branchtab47[2].c[state] = (polys[2] < 0) ^ parity((2*state) & abs(polys[2])) ? 255 : 0;
-  }
-  Init++;
+void set_viterbi47_polynomial_port(int polys[4]){
+	return;
 }
 
 /* Create a new instance of a Viterbi decoder */
 void *create_viterbi47_port(int len){
-  struct v47 *vp;
+  void *p;
+  struct v *vp;
+  static int Init = 0;
 
   if(!Init){
-    int polys[3] = {V47POLYA,V47POLYB,V47POLYC};
-    set_viterbi47_polynomial_port(polys);
+    int state, i;
+    int polys[RATE] = POLYS;
+    for(state=0;state < NUMSTATES/2;state++){
+      for (i=0; i<RATE; i++){
+        Branchtab[i*NUMSTATES/2+state] = (polys[i] < 0) ^ parity((2*state) & abs(polys[i])) ? 255 : 0;
+      }
+    }
+    Init++;
   }
-  if((vp = (struct v47 *)malloc(sizeof(struct v47))) == NULL)
+
+  if(posix_memalign((void**)&p, 16,sizeof(struct v)))
     return NULL;
 
-  if((vp->decisions = (decision_t *)malloc((len+8)*sizeof(decision_t))) == NULL){
+  vp = (struct v *)p;
+
+  if(posix_memalign((void**)&vp->decisions, 16,(len+(K-1))*sizeof(decision_t))){
     free(vp);
     return NULL;
   }
@@ -70,43 +152,53 @@ void *create_viterbi47_port(int len){
   return vp;
 }
 
-
 /* Viterbi chainback */
 int chainback_viterbi47_port(
       void *p,
       unsigned char *data, /* Decoded output data */
       unsigned int nbits, /* Number of data bits */
       unsigned int endstate){ /* Terminal encoder state */
-  struct v47 *vp = p;
+  struct v *vp = p;
   decision_t *d;
+
+  /* ADDSHIFT and SUBSHIFT make sure that the thing returned is a byte. */
+#if (K-1<8)
+#define ADDSHIFT (8-(K-1))
+#define SUBSHIFT 0
+#elif (K-1>8)
+#define ADDSHIFT 0
+#define SUBSHIFT ((K-1)-8)
+#else
+#define ADDSHIFT 0
+#define SUBSHIFT 0
+#endif
 
   if(p == NULL)
     return -1;
-
   d = vp->decisions;
   /* Make room beyond the end of the encoder register so we can
    * accumulate a full byte of decoded data
    */
-  endstate %= 256;
+
+  endstate = (endstate%NUMSTATES) << ADDSHIFT;
 
   /* The store into data[] only needs to be done every 8 bits.
    * But this avoids a conditional branch, and the writes will
    * combine in the cache anyway
    */
-  d += 8; /* Look past tail */
+  d += (K-1); /* Look past tail */
   while(nbits-- != 0){
     int k;
-    
-    k = (d[nbits].w[(endstate)/32] >> (endstate%32)) & 1;
-    data[nbits>>3] = endstate = (endstate >> 1) | (k << 7);
+    k = (d[nbits].w[(endstate>>ADDSHIFT)/32] >> ((endstate>>ADDSHIFT)%32)) & 1;
+    endstate = (endstate >> 1) | (k << (K-2+ADDSHIFT));
+    data[nbits>>3] = endstate>>SUBSHIFT;
   }
   return 0;
 }
 
-
 /* Delete instance of a Viterbi decoder */
 void delete_viterbi47_port(void *p){
-  struct v47 *vp = p;
+  struct v *vp = p;
 
   if(vp != NULL){
     free(vp->decisions);
@@ -115,54 +207,78 @@ void delete_viterbi47_port(void *p){
 }
 
 /* C-language butterfly */
-#define BFLY(i) {\
-unsigned int metric,m0,m1,decision;\
-    metric = (Branchtab47[0].c[i] ^ sym0) + (Branchtab47[1].c[i] ^ sym1) + \
-     (Branchtab47[2].c[i] ^ sym2);\
-    m0 = vp->old_metrics->w[i] + metric;\
-    m1 = vp->old_metrics->w[i+128] + (765 - metric);\
-    decision = (signed int)(m0-m1) > 0;\
-    vp->new_metrics->w[2*i] = decision ? m1 : m0;\
-    d->w[i/16] |= decision << ((2*i)&31);\
-    m0 -= (metric+metric-765);\
-    m1 += (metric+metric-765);\
-    decision = (signed int)(m0-m1) > 0;\
-    vp->new_metrics->w[2*i+1] = decision ? m1 : m0;\
-    d->w[i/16] |= decision << ((2*i+1)&31);\
+void BFLY(int i, int s, COMPUTETYPE * syms, struct v * vp, decision_t * d) {
+  int j, decision0, decision1;
+  COMPUTETYPE metric,m0,m1,m2,m3;
+
+  metric =0;
+  for (j=0;j<RATE;j++) metric += (Branchtab[i+j*NUMSTATES/2] ^ syms[s*RATE+j])>>METRICSHIFT ;
+  metric=metric>>PRECISIONSHIFT;
+  
+  const COMPUTETYPE max = ((RATE*((256 -1)>>METRICSHIFT))>>PRECISIONSHIFT);
+  
+  m0 = vp->old_metrics->t[i] + metric;
+  m1 = vp->old_metrics->t[i+NUMSTATES/2] + (max - metric);
+  m2 = vp->old_metrics->t[i] + (max - metric);
+  m3 = vp->old_metrics->t[i+NUMSTATES/2] + metric;
+  
+  decision0 = (signed int)(m0-m1) > 0;
+  decision1 = (signed int)(m2-m3) > 0;
+  
+  vp->new_metrics->t[2*i] = decision0 ? m1 : m0;
+  vp->new_metrics->t[2*i+1] =  decision1 ? m3 : m2;
+  
+  d->w[i/(sizeof(unsigned int)*8/2)+s*(sizeof(decision_t)/sizeof(unsigned int))] |= 
+    (decision0|decision1<<1) << ((2*i)&(sizeof(unsigned int)*8-1));
 }
+
 
 /* Update decoder with a block of demodulated symbols
  * Note that nbits is the number of decoded data bits, not the number
  * of symbols!
  */
+    COMPUTETYPE max_spread = 0;
 
-int update_viterbi47_blk_port(void *p,unsigned char *syms,int nbits){
-  struct v47 *vp = p;
+int update_viterbi47_blk_port(void *p, COMPUTETYPE *syms,int nbits){
+  struct v *vp = p;
+
   decision_t *d;
-
+  int s,i;
   if(p == NULL)
     return -1;
-  
-  d = (decision_t *)vp->dp;
-  while(nbits--){
+  d = (decision_t *)vp->decisions;
+
+  for (s=0;s<nbits;s++)
+    memset(d+s,0,sizeof(decision_t));
+
+  for (s=0;s<nbits;s++){
     void *tmp;
-    unsigned char sym0,sym1,sym2;
-    int i;
+    for(i=0;i<NUMSTATES/2;i++){
+      BFLY(i, s, syms, vp, vp->decisions);
+    }
 
-    for(i=0;i<8;i++)
-      d->w[i] = 0;
-    sym0 = *syms++;
-    sym1 = *syms++;
-    sym2 = *syms++;
+#ifdef GENERICONLY
+    COMPUTETYPE min=vp->new_metrics->t[0];
+    COMPUTETYPE max=vp->new_metrics->t[0];
+    
+    /* Compute Spread */
+    for(int i=0;i<NUMSTATES;i++)
+      if (min>vp->new_metrics->t[i]) 
+        min=vp->new_metrics->t[i];
+      else if (max<vp->new_metrics->t[i])
+        max=vp->new_metrics->t[i];
+    if (max_spread<max-min)
+      max_spread=max-min;
+#endif
 
-    for(i=0;i<128;i++)
-      BFLY(i);
-
-    d++;
+    renormalize(vp->new_metrics->t, RENORMALIZE_THRESHOLD);
+    
+    ///     Swap pointers to old and new metrics
     tmp = vp->old_metrics;
     vp->old_metrics = vp->new_metrics;
     vp->new_metrics = tmp;
-  }  
-  vp->dp = d;
+  }
+
   return 0;
 }
+
