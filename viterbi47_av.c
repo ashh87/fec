@@ -13,11 +13,11 @@
 typedef union { unsigned char c[2][16]; vector unsigned char v[2]; } decision_t;
 typedef union { unsigned short s[256]; vector unsigned short v[32]; } metric_t;
 
-static union branchtab39 { unsigned short s[128]; vector unsigned short v[16];} Branchtab39[3];
+static union branchtab47 { unsigned short s[128]; vector unsigned short v[16];} Branchtab47[3];
 static int Init = 0;
 
 /* State info for instance of Viterbi decoder */
-struct v39 {
+struct v47 {
   metric_t metrics1; /* path metric buffer 1 */
   metric_t metrics2; /* path metric buffer 2 */
   void *dp;          /* Pointer to current decision */
@@ -26,8 +26,8 @@ struct v39 {
 };
 
 /* Initialize Viterbi decoder for start of new frame */
-int init_viterbi39_av(void *p,int starting_state){
-  struct v39 *vp = p;
+int init_viterbi47_av(void *p,int starting_state){
+  struct v47 *vp = p;
   int i;
 
   for(i=0;i<32;i++)
@@ -40,39 +40,39 @@ int init_viterbi39_av(void *p,int starting_state){
   return 0;
 }
 
-void set_viterbi39_polynomial_av(int polys[3]){
+void set_viterbi47_polynomial_av(int polys[3]){
   int state;
 
   for(state=0;state < 128;state++){
-    Branchtab39[0].s[state] = (polys[0] < 0) ^ parity((2*state) & abs(polys[0])) ? 255 : 0;
-    Branchtab39[1].s[state] = (polys[1] < 0) ^ parity((2*state) & abs(polys[1])) ? 255 : 0;
-    Branchtab39[2].s[state] = (polys[2] < 0) ^ parity((2*state) & abs(polys[2])) ? 255 : 0;
+    Branchtab47[0].s[state] = (polys[0] < 0) ^ parity((2*state) & abs(polys[0])) ? 255 : 0;
+    Branchtab47[1].s[state] = (polys[1] < 0) ^ parity((2*state) & abs(polys[1])) ? 255 : 0;
+    Branchtab47[2].s[state] = (polys[2] < 0) ^ parity((2*state) & abs(polys[2])) ? 255 : 0;
   }
   Init++;
 }
 
 /* Create a new instance of a Viterbi decoder */
-void *create_viterbi39_av(int len){
-  struct v39 *vp;
+void *create_viterbi47_av(int len){
+  struct v47 *vp;
 
   if(!Init){
-    int polys[3] = { V39POLYA, V39POLYB, V39POLYC };
+    int polys[3] = { V47POLYA, V47POLYB, V47POLYC };
 
-    set_viterbi39_polynomial_av(polys);
+    set_viterbi47_polynomial_av(polys);
   }
-  vp = (struct v39 *)malloc(sizeof(struct v39));
+  vp = (struct v47 *)malloc(sizeof(struct v47));
   vp->decisions = malloc(sizeof(decision_t)*(len+8));
-  init_viterbi39_av(vp,0);
+  init_viterbi47_av(vp,0);
   return vp;
 }
 
 /* Viterbi chainback */
-int chainback_viterbi39_av(
+int chainback_viterbi47_av(
       void *p,
       unsigned char *data, /* Decoded output data */
       unsigned int nbits, /* Number of data bits */
       unsigned int endstate){ /* Terminal encoder state */
-  struct v39 *vp = p;
+  struct v47 *vp = p;
   decision_t *d = (decision_t *)vp->decisions;
   int path_metric;
 
@@ -99,8 +99,8 @@ int chainback_viterbi39_av(
 }
 
 /* Delete instance of a Viterbi decoder */
-void delete_viterbi39_av(void *p){
-  struct v39 *vp = p;
+void delete_viterbi47_av(void *p){
+  struct v47 *vp = p;
 
   if(vp != NULL){
     free(vp->decisions);
@@ -108,8 +108,8 @@ void delete_viterbi39_av(void *p){
   }
 }
 
-int update_viterbi39_blk_av(void *p,unsigned char *syms,int nbits){
-  struct v39 *vp = p;
+int update_viterbi47_blk_av(void *p,unsigned char *syms,int nbits){
+  struct v47 *vp = p;
   decision_t *d = (decision_t *)vp->dp;
   int path_metric = 0;
   vector unsigned char decisions = (vector unsigned char){0};
@@ -138,8 +138,8 @@ int update_viterbi39_blk_av(void *p,unsigned char *syms,int nbits){
        * the XOR operations constitute conditional negation.
        * the metrics are in the range 0-765
        */
-      m0 = vec_add(vec_xor(Branchtab39[0].v[i],sym0v),vec_xor(Branchtab39[1].v[i],sym1v));
-      m1 = vec_xor(Branchtab39[2].v[i],sym2v);
+      m0 = vec_add(vec_xor(Branchtab47[0].v[i],sym0v),vec_xor(Branchtab47[1].v[i],sym1v));
+      m1 = vec_xor(Branchtab47[2].v[i],sym2v);
       metric = vec_add(m0,m1);
       m_metric = vec_sub((vector unsigned short){765},metric);
     
