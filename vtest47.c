@@ -42,7 +42,7 @@ int main(int argc,char *argv[]){
   unsigned char bits[MAXBYTES];
   unsigned char data[MAXBYTES];
   unsigned char xordata[MAXBYTES];
-  unsigned char symbols[8*3*(MAXBYTES+8)];
+  unsigned char symbols[8*4*(MAXBYTES+8)];
   void *vp;
   extern char *optarg;
   struct rusage start,finish;
@@ -112,14 +112,15 @@ int main(int argc,char *argv[]){
     
     for(tr=0;tr<trials;tr++){
       /* Encode a frame of random data */
-      for(i=0;i<framebits+8;i++){
+      for(i=0;i<framebits+6;i++){
 	int bit = (i < framebits) ? (random() & 1) : 0;
 	
 	sr = (sr << 1) | bit;
 	bits[i/8] = sr & 0xff;
-	symbols[3*i+0] = addnoise(parity(sr & V47POLYA),gain,Gain,127.5,255);
-	symbols[3*i+1] = addnoise(parity(sr & V47POLYB),gain,Gain,127.5,255);
-	symbols[3*i+2] = addnoise(parity(sr & V47POLYC),gain,Gain,127.5,255);
+	symbols[4*i+0] = addnoise(parity(sr & V47POLYA),gain,Gain,127.5,255);
+	symbols[4*i+1] = addnoise(parity(sr & V47POLYB),gain,Gain,127.5,255);
+	symbols[4*i+2] = addnoise(parity(sr & V47POLYC),gain,Gain,127.5,255);
+	symbols[4*i+3] = addnoise(parity(sr & V47POLYD),gain,Gain,127.5,255);
       }
       /* Decode it and make sure we get the right answer */
       /* Initialize Viterbi decoder */
