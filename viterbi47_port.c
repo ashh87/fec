@@ -52,12 +52,13 @@ typedef union {
 } metric_t __attribute__ ((aligned (16)));
 
 inline void renormalize(COMPUTETYPE* X, COMPUTETYPE threshold){
+	int i;
       if (X[0]>threshold){
     COMPUTETYPE min=X[0];
-    for(int i=0;i<NUMSTATES;i++)
+    for(i=0;i<NUMSTATES;i++)
     if (min>X[i])
       min=X[i];
-    for(int i=0;i<NUMSTATES;i++)
+    for(i=0;i<NUMSTATES;i++)
       X[i]-=min;
       }
 }
@@ -234,7 +235,7 @@ int update_viterbi47_blk_port(void *p, COMPUTETYPE *syms,int nbits){
     COMPUTETYPE max=vp->new_metrics->t[0];
     
     /* Compute Spread */
-    for(int i=0;i<NUMSTATES;i++)
+    for(i=0;i<NUMSTATES;i++)
       if (min>vp->new_metrics->t[i]) 
         min=vp->new_metrics->t[i];
       else if (max<vp->new_metrics->t[i])
